@@ -1,0 +1,10 @@
+{"email": "test@test.com",
+    "address": {
+        "given_name": "John",
+        "surname": "Doe",
+        "street": "Some Street",
+        "street_no": "123",
+        "zip_code": "178 23",
+        "city": "Stockholm"
+    }
+}
