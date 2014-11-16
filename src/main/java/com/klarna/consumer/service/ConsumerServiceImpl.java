@@ -1,33 +1,36 @@
 package com.klarna.consumer.service;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.UUID;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import com.klarna.consumer.api.Address;
 import com.klarna.consumer.api.Consumer;
+import com.klarna.consumer.util.ConsumerKey;
 
 
 @Service
 public class ConsumerServiceImpl implements ConsumerService {
 
 	public Address address;
-	Map<String, Consumer> consumerData = new HashMap<String, Consumer>();
+	
+	@Autowired
+	private ConsumerCacheService consumerCacheService;
 
 	@Override
 	@Cacheable(value = { "consumerInfo" })
 	public Consumer saveConsumerInfo(Consumer consumer) {
 		Consumer consumerToSave ;
-		if(consumerData.containsKey(consumer.getEmail())){
-			consumerToSave = consumer.withConsumerId(consumerData.toString());
+		ConsumerKey consumerKey = getConsumerKey(consumer.getConsumerId(), consumer.getEmail());
+		String consumerId = checkIfConsumerAlreadyExists(consumerKey);
+		if(consumerId == null) {
+			consumerId = UUID.randomUUID().toString();
+			consumerKey = getConsumerKey(consumerId, consumer.getEmail());
 		}
-		else{
-			consumerToSave = consumer.withConsumerId(UUID.randomUUID().toString());
-		}
-        consumerData.put(consumerToSave.getEmail(), consumerToSave);
+		consumerToSave = consumer.withConsumerId(consumerId);
+		consumerCacheService.addConsumer(consumerKey, consumerToSave);
         return consumerToSave;
 		
 	}
@@ -35,13 +38,25 @@ public class ConsumerServiceImpl implements ConsumerService {
 	@Override
 	@Cacheable(value = { "consumerInfoForId" })
 	public Consumer getConsumerInfoForId(String consumerId) {
-		System.out.println("customer data"+ consumerData.get(consumerId));
-        return consumerData.get(consumerId);
+		ConsumerKey consumerKey = getConsumerKey(consumerId, null);
+        return consumerCacheService.getConsumer(consumerKey);
 	}
 	
 	@Override
 	@Cacheable(value = { "consumerInfoForEmail" })
 	public Consumer getConsumerInfoForEmail(String email){
-		return consumerData.get(email);
+		ConsumerKey consumerKey = getConsumerKey(null, email);
+		return consumerCacheService.getConsumer(consumerKey);
+	}
+	
+	private String checkIfConsumerAlreadyExists(ConsumerKey consumerKey) {
+		Consumer consumer = consumerCacheService.getConsumer(consumerKey);
+		return consumer == null ? null : consumer.getConsumerId();
+	}
+
+	private ConsumerKey getConsumerKey(String consumerId, String email) {
+		ConsumerKey consumerKey = new ConsumerKey(consumerId, email);
+		return consumerKey;
+		
 	}
 }

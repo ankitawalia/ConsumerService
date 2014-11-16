@@ -33,3 +33,4 @@ local.properties
 
 **/target
 **/build/Servers/
+/target/

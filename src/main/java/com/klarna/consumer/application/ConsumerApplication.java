@@ -1,6 +1,8 @@
 package com.klarna.consumer.application;
 
+import com.klarna.consumer.configuration.CacheConfigurator;
 import com.klarna.consumer.configuration.WebAppConfig;
+
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
@@ -32,7 +34,7 @@ public class ConsumerApplication {
 
     public void start() {
         AnnotationConfigWebApplicationContext applicationContext = new AnnotationConfigWebApplicationContext();
-        applicationContext.register(WebAppConfig.class);
+        applicationContext.register(WebAppConfig.class, CacheConfigurator.class);
 
         ServletHolder servletHolder = new ServletHolder(new DispatcherServlet(applicationContext));
         ServletContextHandler context = new ServletContextHandler();
