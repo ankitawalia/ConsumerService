@@ -1,36 +1,45 @@
 package com.klarna.consumer.service;
 
+import java.util.List;
 import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.stereotype.Service;
 
-import com.google.common.base.Equivalence;
 import com.google.common.cache.Cache;
 import com.klarna.consumer.api.Consumer;
-import com.klarna.consumer.cache.ConsumerCacheManager.ConsumerEquivalence;
-import com.klarna.consumer.util.ConsumerKey;
+import com.klarna.consumer.util.ConsumerKeyIndex;
 
 @Service
 public  class ConsumerCacheServiceImpl extends CacheServiceImpl implements ConsumerCacheService,InitializingBean{
 	
-	private Cache<Equivalence.Wrapper<ConsumerKey>, ConcurrentLinkedDeque<Consumer>> consumerCache;
+	private Cache<String, ConcurrentLinkedDeque<Consumer>> consumerCache;
+	
+	public static List<ConsumerKeyIndex> consumerKeyIndexList = new CopyOnWriteArrayList<>();
 	
 	@Override
-	public void addConsumer(ConsumerKey consumerKey, Consumer consumer) {
+	public void addConsumer(String consumerId, Consumer consumer) {
 		ConcurrentLinkedDeque<Consumer> consumerQueue;
-			consumerQueue = consumerCache.getIfPresent(ConsumerEquivalence.get().wrap(consumerKey));
+			consumerQueue = consumerCache.getIfPresent( consumerId);
 			if(consumerQueue ==  null) {
 				consumerQueue = new ConcurrentLinkedDeque<>();
+				addSecondaryKeyMappings(consumer.getConsumerId(), consumer.getEmail());
 			}
 			boolean existFlag = validateConsumerData(consumerQueue,consumer);
 			if(!existFlag){
 				consumerQueue.addFirst(consumer);
-				consumerCache.put(ConsumerEquivalence.get().wrap(consumerKey),consumerQueue);
+				consumerCache.put(consumerId,consumerQueue);
 			}
 	}
 
 	
+	private void addSecondaryKeyMappings(String consumerId, String email) {
+		ConsumerKeyIndex consumerKeyIndex = new ConsumerKeyIndex(consumerId, email);
+		consumerKeyIndexList.add(consumerKeyIndex);
+	}
+
+
 	private boolean validateConsumerData(
 			ConcurrentLinkedDeque<Consumer> consumerQueue,Consumer consumer) {
 		if(!consumerQueue.isEmpty() && consumerQueue.getFirst().equals(consumer)){
@@ -41,17 +50,17 @@ public  class ConsumerCacheServiceImpl extends CacheServiceImpl implements Consu
 
 
 	@Override
-	public ConcurrentLinkedDeque<Consumer> getConsumerHistoryById(ConsumerKey consumerKey) {
-		ConcurrentLinkedDeque<Consumer> consumerQueue =  consumerCache.getIfPresent(ConsumerEquivalence.get().wrap(consumerKey));
+	public ConcurrentLinkedDeque<Consumer> getConsumerHistoryById(String consumerId) {
+		ConcurrentLinkedDeque<Consumer> consumerQueue =  consumerCache.getIfPresent(consumerId);
 		  return consumerQueue;
 	}
 
 
 
 	@Override
-	public Consumer getConsumer(ConsumerKey consumerKey) {
+	public Consumer getConsumer(String consumerId) {
 			
-			ConcurrentLinkedDeque<Consumer> consumerQueue =  consumerCache.getIfPresent(ConsumerEquivalence.get().wrap(consumerKey));
+			ConcurrentLinkedDeque<Consumer> consumerQueue =  consumerCache.getIfPresent(consumerId);
 			  return consumerQueue == null ? null : consumerQueue.getFirst();
 	}
 
@@ -59,6 +68,14 @@ public  class ConsumerCacheServiceImpl extends CacheServiceImpl implements Consu
 	@Override
 	public void afterPropertiesSet() throws Exception {
 		consumerCache = cacheManager.getCache("ConsumerCache");		
+	}
+
+
+	@Override
+	public String getConsumerIdForEmail(String email) {
+		ConsumerKeyIndex consumerKeyIndex = new ConsumerKeyIndex(null, email);
+		int keyIndex =  consumerKeyIndexList.indexOf(consumerKeyIndex);
+		return keyIndex != -1 ? consumerKeyIndexList.get(keyIndex).getId() : null;
 	}
 
 	

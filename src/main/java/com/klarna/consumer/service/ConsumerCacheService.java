@@ -3,14 +3,15 @@ package com.klarna.consumer.service;
 import java.util.concurrent.ConcurrentLinkedDeque;
 
 import com.klarna.consumer.api.Consumer;
-import com.klarna.consumer.util.ConsumerKey;
 
 public interface ConsumerCacheService  extends CacheService{
 
-public 	void addConsumer(ConsumerKey consumerKey, Consumer consumer);
+public 	void addConsumer(String consumerId, Consumer consumer);
 
-public ConcurrentLinkedDeque<Consumer> getConsumerHistoryById(ConsumerKey consumerKey);
+public ConcurrentLinkedDeque<Consumer> getConsumerHistoryById(String consumerId);
 
-public Consumer getConsumer(ConsumerKey consumerKey);
+public Consumer getConsumer(String consumerId);
+
+public String getConsumerIdForEmail(String email);
 
 }

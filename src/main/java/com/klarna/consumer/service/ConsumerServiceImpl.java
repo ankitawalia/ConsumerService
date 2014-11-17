@@ -4,13 +4,11 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentLinkedDeque;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import com.klarna.consumer.api.Address;
 import com.klarna.consumer.api.Consumer;
 import com.klarna.consumer.util.AddressNormalizer;
-import com.klarna.consumer.util.ConsumerKey;
 
 
 @Service
@@ -24,46 +22,37 @@ public class ConsumerServiceImpl implements ConsumerService {
 	@Override
 	public String saveConsumerInfo(Consumer consumer) {
 		Consumer consumerToSave ;
-		ConsumerKey consumerKey = getConsumerKey(consumer.getConsumerId(), consumer.getEmail());
-		String consumerId = checkIfConsumerAlreadyExists(consumerKey);
+		String consumerId = checkIfConsumerAlreadyExists(consumer.getEmail());
 		if(consumerId == null) {
 			consumerId = UUID.randomUUID().toString();
-			consumerKey = getConsumerKey(consumerId, consumer.getEmail());
 		}
 		Address normalizedAddress = AddressNormalizer.normalize(consumer.getAddress());
 		consumerToSave = consumer.withConsumerId(consumerId).withAddress(normalizedAddress);
 		//consumerToSave = consumer.withAddress(normalizedAddress);
-		consumerCacheService.addConsumer(consumerKey, consumerToSave);
+		consumerCacheService.addConsumer(consumerId, consumerToSave);
         return consumerToSave.getConsumerId();
 		
 	}
 	
 	@Override
 	public Consumer getConsumerInfoForId(String consumerId) {
-		ConsumerKey consumerKey = getConsumerKey(consumerId, null);
-        return consumerCacheService.getConsumer(consumerKey);
+        return consumerCacheService.getConsumer(consumerId);
 	}
 	
 	@Override
 	public Consumer getConsumerInfoForEmail(String email){
-		ConsumerKey consumerKey = getConsumerKey(null, email);
-		return consumerCacheService.getConsumer(consumerKey);
+		String consumerId = consumerCacheService.getConsumerIdForEmail(email);
+		return consumerCacheService.getConsumer(consumerId);
 	}
 	
-	private String checkIfConsumerAlreadyExists(ConsumerKey consumerKey) {
-		Consumer consumer = consumerCacheService.getConsumer(consumerKey);
-		return consumer == null ? null : consumer.getConsumerId();
+	private String checkIfConsumerAlreadyExists(String email) {
+		String consumerId  = consumerCacheService.getConsumerIdForEmail(email);
+		//Consumer consumer = consumerCacheService.getConsumer(consumerId);
+		return consumerId;
 	}
 
-	private ConsumerKey getConsumerKey(String consumerId, String email) {
-		ConsumerKey consumerKey = new ConsumerKey(consumerId, email);
-		return consumerKey;
-		
-	}
-	
 	@Override
 	public ConcurrentLinkedDeque<Consumer> getConsumerHistoryById(String consumerId) {
-		ConsumerKey consumerKey = getConsumerKey(consumerId, null);
-		return consumerCacheService.getConsumerHistoryById(consumerKey);
+		return consumerCacheService.getConsumerHistoryById(consumerId);
 	}
 }

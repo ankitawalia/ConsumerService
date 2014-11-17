@@ -1,22 +1,18 @@
 package com.klarna.consumer.util;
 
-public class ConsumerKey {
+public class ConsumerKeyIndex {
 	
 	private String id;
 	
 	private String emailId;
 	
-	public ConsumerKey(final String id, final String emailId) {
+	public ConsumerKeyIndex(final String id, final String emailId) {
 		this.id = id;
 		this.emailId = emailId;
 	}
 
 	@Override
 	public int hashCode() {
-		final int prime = 31;
-		int result = 1;
-		result = prime * result + ((emailId == null) ? 0 : emailId.hashCode());
-		result = prime * result + ((id == null) ? 0 : id.hashCode());
 		return 100;
 	}
 
@@ -28,7 +24,7 @@ public class ConsumerKey {
 			return false;
 		if (getClass() != obj.getClass())
 			return false;
-		ConsumerKey other = (ConsumerKey) obj;
+		ConsumerKeyIndex other = (ConsumerKeyIndex) obj;
 		if (emailId == null && id == null) {
 			return false;
 		} else if(emailId == null && id != null){
@@ -43,6 +39,14 @@ public class ConsumerKey {
 		}
 		
 		return false;
+	}
+
+	public String getId() {
+		return id;
+	}
+
+	public String getEmailId() {
+		return emailId;
 	}
 	
 	
