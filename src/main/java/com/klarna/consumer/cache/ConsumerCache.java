@@ -22,9 +22,9 @@ public class ConsumerCache extends
 
 	@Override
 	protected CacheBuilder<String, ConcurrentLinkedDeque<Consumer>> buildCacheBuilder() {
-		return CacheBuilder.newBuilder()
+		return CacheBuilder.newBuilder().softValues()
 				.removalListener(new ConsumerRemovalListener())
-				.expireAfterWrite(5, TimeUnit.HOURS).maximumSize(100);
+				.expireAfterWrite(5, TimeUnit.HOURS).maximumSize(1000);
 	};
 
 	private class ConsumerRemovalListener implements
@@ -35,6 +35,7 @@ public class ConsumerCache extends
 				RemovalNotification<String, ConcurrentLinkedDeque<Consumer>> notification) {
 			if (notification.wasEvicted()
 					|| notification.getCause().equals(Notification.REMOVED)) {
+				System.out.println("Removing Entry :" + notification.getKey());
 				consumerCacheService
 						.removeConsumerFromSeconaryMappings(notification
 								.getKey());
