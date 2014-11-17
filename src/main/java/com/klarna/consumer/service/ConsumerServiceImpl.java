@@ -1,6 +1,7 @@
 package com.klarna.consumer.service;
 
 import java.util.UUID;
+import java.util.concurrent.ConcurrentLinkedDeque;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.Cacheable;
@@ -8,6 +9,7 @@ import org.springframework.stereotype.Service;
 
 import com.klarna.consumer.api.Address;
 import com.klarna.consumer.api.Consumer;
+import com.klarna.consumer.util.AddressNormalizer;
 import com.klarna.consumer.util.ConsumerKey;
 
 
@@ -20,8 +22,7 @@ public class ConsumerServiceImpl implements ConsumerService {
 	private ConsumerCacheService consumerCacheService;
 
 	@Override
-	@Cacheable(value = { "consumerInfo" })
-	public Consumer saveConsumerInfo(Consumer consumer) {
+	public String saveConsumerInfo(Consumer consumer) {
 		Consumer consumerToSave ;
 		ConsumerKey consumerKey = getConsumerKey(consumer.getConsumerId(), consumer.getEmail());
 		String consumerId = checkIfConsumerAlreadyExists(consumerKey);
@@ -29,21 +30,21 @@ public class ConsumerServiceImpl implements ConsumerService {
 			consumerId = UUID.randomUUID().toString();
 			consumerKey = getConsumerKey(consumerId, consumer.getEmail());
 		}
-		consumerToSave = consumer.withConsumerId(consumerId);
+		Address normalizedAddress = AddressNormalizer.normalize(consumer.getAddress());
+		consumerToSave = consumer.withConsumerId(consumerId).withAddress(normalizedAddress);
+		//consumerToSave = consumer.withAddress(normalizedAddress);
 		consumerCacheService.addConsumer(consumerKey, consumerToSave);
-        return consumerToSave;
+        return consumerToSave.getConsumerId();
 		
 	}
 	
 	@Override
-	@Cacheable(value = { "consumerInfoForId" })
 	public Consumer getConsumerInfoForId(String consumerId) {
 		ConsumerKey consumerKey = getConsumerKey(consumerId, null);
         return consumerCacheService.getConsumer(consumerKey);
 	}
 	
 	@Override
-	@Cacheable(value = { "consumerInfoForEmail" })
 	public Consumer getConsumerInfoForEmail(String email){
 		ConsumerKey consumerKey = getConsumerKey(null, email);
 		return consumerCacheService.getConsumer(consumerKey);
@@ -58,5 +59,11 @@ public class ConsumerServiceImpl implements ConsumerService {
 		ConsumerKey consumerKey = new ConsumerKey(consumerId, email);
 		return consumerKey;
 		
+	}
+	
+	@Override
+	public ConcurrentLinkedDeque<Consumer> getConsumerHistoryById(String consumerId) {
+		ConsumerKey consumerKey = getConsumerKey(consumerId, null);
+		return consumerCacheService.getConsumerHistoryById(consumerKey);
 	}
 }

@@ -2,7 +2,6 @@ package com.klarna.consumer.cache;
 
 import java.util.concurrent.ConcurrentLinkedDeque;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.google.common.base.Equivalence;

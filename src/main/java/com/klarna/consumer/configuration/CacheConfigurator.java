@@ -11,7 +11,7 @@ import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 import com.google.common.cache.CacheBuilder;
 import com.klarna.consumer.cache.ConsumerCacheManager;
 
-@Configuration(value="consumerCacheManager")
+@Configuration
 @EnableWebMvc
 @ComponentScan(basePackages = "com.klarna", excludeFilters = {@ComponentScan.Filter(Configuration.class)})
 public class CacheConfigurator implements InitializingBean {
@@ -21,7 +21,7 @@ public class CacheConfigurator implements InitializingBean {
 	@Bean
 	 public ConsumerCacheManager cacheManager() {
 	   cacheBuilder = CacheBuilder.newBuilder()
-			  .expireAfterWrite(2, TimeUnit.HOURS).maximumSize(100);
+			  .expireAfterWrite(5, TimeUnit.HOURS).maximumSize(100);
 	  ConsumerCacheManager cacheManager = new ConsumerCacheManager();
 	  return cacheManager;
 	 }

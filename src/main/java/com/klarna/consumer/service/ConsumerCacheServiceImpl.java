@@ -1,8 +1,6 @@
 package com.klarna.consumer.service;
 
-import java.util.List;
 import java.util.concurrent.ConcurrentLinkedDeque;
-import java.util.concurrent.ExecutionException;
 
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.stereotype.Service;
@@ -21,19 +19,31 @@ public  class ConsumerCacheServiceImpl extends CacheServiceImpl implements Consu
 	@Override
 	public void addConsumer(ConsumerKey consumerKey, Consumer consumer) {
 		ConcurrentLinkedDeque<Consumer> consumerQueue;
-			consumerQueue = consumerCache.getIfPresent(consumerKey);
+			consumerQueue = consumerCache.getIfPresent(ConsumerEquivalence.get().wrap(consumerKey));
 			if(consumerQueue ==  null) {
 				consumerQueue = new ConcurrentLinkedDeque<>();
 			}
-			consumerQueue.add(consumer);
-			consumerCache.put(ConsumerEquivalence.get().wrap(consumerKey),consumerQueue);
+			boolean existFlag = validateConsumerData(consumerQueue,consumer);
+			if(!existFlag){
+				consumerQueue.addFirst(consumer);
+				consumerCache.put(ConsumerEquivalence.get().wrap(consumerKey),consumerQueue);
+			}
 	}
 
 	
+	private boolean validateConsumerData(
+			ConcurrentLinkedDeque<Consumer> consumerQueue,Consumer consumer) {
+		if(!consumerQueue.isEmpty() && consumerQueue.getFirst().equals(consumer)){
+			return true	;
+		}
+		return false;
+	}
+
+
 	@Override
-	public List<Consumer> getConsumerHistoryById(ConsumerKey consumerKey) {
-		// TODO Auto-generated method stub
-		return null;
+	public ConcurrentLinkedDeque<Consumer> getConsumerHistoryById(ConsumerKey consumerKey) {
+		ConcurrentLinkedDeque<Consumer> consumerQueue =  consumerCache.getIfPresent(ConsumerEquivalence.get().wrap(consumerKey));
+		  return consumerQueue;
 	}
 
 
@@ -42,7 +52,7 @@ public  class ConsumerCacheServiceImpl extends CacheServiceImpl implements Consu
 	public Consumer getConsumer(ConsumerKey consumerKey) {
 			
 			ConcurrentLinkedDeque<Consumer> consumerQueue =  consumerCache.getIfPresent(ConsumerEquivalence.get().wrap(consumerKey));
-			  return consumerQueue == null ? null : consumerQueue.getLast();
+			  return consumerQueue == null ? null : consumerQueue.getFirst();
 	}
 
 

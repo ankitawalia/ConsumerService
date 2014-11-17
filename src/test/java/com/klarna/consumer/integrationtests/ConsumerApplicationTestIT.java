@@ -7,10 +7,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
@@ -24,21 +24,21 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategy;
-import com.klarna.consumer.api.Address;
 import com.klarna.consumer.api.Consumer;
 import com.klarna.consumer.application.ConsumerApplication;
+
 
 public class ConsumerApplicationTestIT {
 
     private static final ConsumerApplication APPLICATION = new ConsumerApplication(8080);
     private final RestTemplate restTemplate = restTemplate();
 
-    @BeforeClass
+    @org.testng.annotations.BeforeClass
     public static void init() throws Exception {
         APPLICATION.start();
     }
 
-    @AfterClass
+    @org.testng.annotations.AfterClass
     public static void tearDown() throws Exception {
         APPLICATION.stop();
     }
@@ -80,7 +80,7 @@ public class ConsumerApplicationTestIT {
         return restTemplate;
     }
 
-    @Test
+    @org.testng.annotations.Test(invocationCount=10000,threadPoolSize=20)
     public void pingTest() {
         ResponseEntity<String> response = restTemplate.getForEntity("http://localhost:8080/ping", String.class);
         assertNotNull(response);
@@ -88,26 +88,64 @@ public class ConsumerApplicationTestIT {
         assertEquals("pong", response.getBody());
     }
     
-    Address address;
     
-    @Test
-    private void testSaveConsumerInfo() {
-        RestTemplate restTemplate = new RestTemplate();
-        
-        Consumer consumer = new Consumer();
-        consumer.withConsumerId("1");
-        consumer.withEmail("test@test.com");
-        consumer.withMobilePhone("070-1234567");
-        consumer.withAddress(address.withSurname("doe"));
-        consumer.withAddress(address.withGivenName("John"));
-        consumer.withAddress(address.withCity("Stockholm"));
-        consumer.withAddress(address.withCountry("sweden"));
-        consumer.withAddress(address.withStreet("Some sTREET"));
-        consumer.withAddress(address.withStreetNo("123"));
-        consumer.withAddress(address.withZipCode("178 23"));
-        consumer.withAddress(address.withCareOf("someoNE"));
-        ResponseEntity<Consumer> response = restTemplate.postForEntity("http://localhost:8080/consumer/data", consumer, Consumer.class);
-        assertNotNull(response);
-        System.out.println(response);
+    @org.testng.annotations.Test(invocationCount=1000,threadPoolSize=10)
+    public void testSaveConsumerInfo() {
+        RestTemplate rest = new RestTemplate();
+        String email = Thread.currentThread().getId()+"@test.com";
+        String a = "{\"email\":\""+email+"\", \"address\": { \"given_name\": \"john\", \"surname\": \"doe\", \"street\": \" Some   street\", \"street_no\": \"123\", \"zip_code\": \"178 23\", \"city\": \"Stockholm\"}}";
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        HttpEntity<String> http = new HttpEntity<String>(a, headers);
+        String response = rest.postForObject("http://localhost:8080/consumers",http, String.class);
+        Consumer response1 = rest.getForObject("http://localhost:8080/consumers/email?email="+Thread.currentThread().getId()+"@test.com", Consumer.class);
+        System.out.println("Response "+response+ " in thread"+Thread.currentThread().getId());
+        System.out.println("Response "+response1.toString()+ " in thread"+Thread.currentThread().getId());
+      //  assertNotNull(res);
     }
+    
+
+   /* @Test
+    public void testUniqueIdGeneration()
+    {
+             int threadCount = 1000;
+            
+               Callable<Boolean> task = new Callable<Boolean>() {
+                   @Override
+                   public Boolean call() {
+                	   RestTemplate restTemplate = new RestTemplate();
+                	   Consumer consumer = new Consumer();
+                        // String sessionId = "testGetQueueSize-sessionId"+ Thread.currentThread().getId();
+                       // String callId = "testGetQueueSize-callId"+ Thread.currentThread().getId();
+                        ResponseEntity<Consumer> response = restTemplate.postForEntity("http://localhost:8080/consumers", consumer, Consumer.class);
+                        assertNotNull(response);
+                       
+                   }
+               };
+               List<Callable<Boolean>> tasks = Collections.nCopies(threadCount, task);
+               ExecutorService executorService = Executors.newFixedThreadPool(threadCount);
+               List<Future<Boolean>> futures = new ArrayList<>(threadCount);
+               int exceptionCount = 0;
+                               try {
+                                     futures = executorService.invokeAll(tasks);
+                               } catch (Exception e) {
+                                     System.out.println("exception in invokeall");
+                                    
+                               }
+                              
+                               for (Future<Boolean> future : futures) {
+                                    
+                                     try {
+                                            future.get();
+                                     } catch (Exception e) {
+                                            exceptionCount++;
+                                     }
+                               }
+               // Check for exceptions
+                        //int expectedQueueSize = theQueue.getQueueSize(serviceEndpointId);
+                       // System.out.println("printing total queue size" + expectedQueueSize);
+                       // System.out.println("printing total exceptionCount" + exceptionCount);
+               //assertEquals(threadCount-exceptionCount, expectedQueueSize);
+                               
+        }*/
 }
