@@ -14,4 +14,6 @@ public Consumer getConsumer(String consumerId);
 
 public String getConsumerIdForEmail(String email);
 
+public void removeConsumerFromSeconaryMappings(String id);
+
 }

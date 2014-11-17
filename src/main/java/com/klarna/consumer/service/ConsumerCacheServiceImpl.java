@@ -77,6 +77,11 @@ public  class ConsumerCacheServiceImpl extends CacheServiceImpl implements Consu
 		int keyIndex =  consumerKeyIndexList.indexOf(consumerKeyIndex);
 		return keyIndex != -1 ? consumerKeyIndexList.get(keyIndex).getId() : null;
 	}
+	
+	public void removeConsumerFromSeconaryMappings(String id) {
+		ConsumerKeyIndex consumerKeyIndex = new ConsumerKeyIndex(id, null);
+		consumerKeyIndexList.remove(consumerKeyIndex);
+	}
 
 	
 }

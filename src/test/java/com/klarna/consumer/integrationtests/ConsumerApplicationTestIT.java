@@ -89,7 +89,7 @@ public class ConsumerApplicationTestIT {
     }
     
     
-    @org.testng.annotations.Test(invocationCount=1000,threadPoolSize=10)
+    @org.testng.annotations.Test(invocationCount=10000,threadPoolSize=10)
     public void testSaveConsumerInfo() {
         RestTemplate rest = new RestTemplate();
         String email = Thread.currentThread().getId()+"@test.com";

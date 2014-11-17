@@ -28,7 +28,6 @@ public class ConsumerServiceImpl implements ConsumerService {
 		}
 		Address normalizedAddress = AddressNormalizer.normalize(consumer.getAddress());
 		consumerToSave = consumer.withConsumerId(consumerId).withAddress(normalizedAddress);
-		//consumerToSave = consumer.withAddress(normalizedAddress);
 		consumerCacheService.addConsumer(consumerId, consumerToSave);
         return consumerToSave.getConsumerId();
 		
@@ -42,12 +41,11 @@ public class ConsumerServiceImpl implements ConsumerService {
 	@Override
 	public Consumer getConsumerInfoForEmail(String email){
 		String consumerId = consumerCacheService.getConsumerIdForEmail(email);
-		return consumerCacheService.getConsumer(consumerId);
+		return consumerId != null ? consumerCacheService.getConsumer(consumerId) : null;
 	}
 	
 	private String checkIfConsumerAlreadyExists(String email) {
 		String consumerId  = consumerCacheService.getConsumerIdForEmail(email);
-		//Consumer consumer = consumerCacheService.getConsumer(consumerId);
 		return consumerId;
 	}
 
