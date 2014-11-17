@@ -4,7 +4,6 @@ import java.util.List;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import org.springframework.beans.factory.InitializingBean;
 import org.springframework.stereotype.Service;
 
 import com.google.common.cache.Cache;
@@ -12,7 +11,7 @@ import com.klarna.consumer.api.Consumer;
 import com.klarna.consumer.util.ConsumerKeyIndex;
 
 @Service
-public  class ConsumerCacheServiceImpl extends CacheServiceImpl implements ConsumerCacheService,InitializingBean{
+public  class ConsumerCacheServiceImpl extends CacheServiceImpl implements ConsumerCacheService{
 	
 	private Cache<String, ConcurrentLinkedDeque<Consumer>> consumerCache;
 	
@@ -65,10 +64,6 @@ public  class ConsumerCacheServiceImpl extends CacheServiceImpl implements Consu
 	}
 
 
-	@Override
-	public void afterPropertiesSet() throws Exception {
-		consumerCache = cacheManager.getCache("ConsumerCache");		
-	}
 
 
 	@Override
@@ -83,5 +78,10 @@ public  class ConsumerCacheServiceImpl extends CacheServiceImpl implements Consu
 		consumerKeyIndexList.remove(consumerKeyIndex);
 	}
 
+
+	@Override
+	public void setCache(Cache cache) {
+		this.consumerCache = cache;  		
+	}
 	
 }

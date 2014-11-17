@@ -24,8 +24,9 @@ public class CacheManager {
 			return cache;
 		}
 		
-		public static void registerCache(String name, Cache cache) {
-			cacheMap.putIfAbsent(name, cache);
+		public static void registerCache(String name, GenericCache cache) {
+			cacheMap.putIfAbsent(name, cache.getCache());
+			cache.setCache(name);
 		}
 
 		public Set<String> getCacheNames() {
