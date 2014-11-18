@@ -6,7 +6,7 @@ import org.springframework.stereotype.Service;
 import com.klarna.consumer.cache.CacheManager;
 
 @Service
-public abstract class CacheServiceImpl implements CacheService{
+public class CacheServiceImpl implements CacheService{
 	
 	@Autowired
 	CacheManager cacheManager;

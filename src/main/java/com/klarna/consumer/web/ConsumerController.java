@@ -1,7 +1,6 @@
 package com.klarna.consumer.web;
 
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
-import static org.springframework.web.bind.annotation.RequestMethod.POST;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -19,13 +18,18 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.klarna.consumer.api.Consumer;
 import com.klarna.consumer.service.ConsumerService;
 
+/**
+ * @author ankita walia
+ * Controller class to save and retrieve consumer info using restful api 
+ *
+ */
 @Controller
 @RequestMapping("/consumers")
 public class ConsumerController {
@@ -35,16 +39,27 @@ public class ConsumerController {
 	 @Autowired
 	 private ConsumerService consumerservice;
 	 
-	 @Autowired
-	 private ObjectMapper objMapper;
-	 
 	 Map<Integer, Consumer> consumerData = new HashMap<Integer, Consumer>();
 	 
-	 @RequestMapping(method = POST,produces="application/json")
+	 
+	 /**
+	  * Method to save consumer info.
+	  * 
+	  * It validates the incoming request to check if all fields except "mobile_phone",
+	  * "care_of" and "country" are present and contain a non whitespace character.
+	  * 
+	  * If request is valid then returns status code 200OK
+	  * If request is invalid then returns status code 400 Bad Request
+	  * 
+	  * @return Map of String
+	  * 
+	  */
+	
+	 @RequestMapping(method = RequestMethod.POST)
 	 @ResponseBody
-	 public String saveConsumerInfo(@RequestBody Consumer consumer, HttpServletRequest request, HttpServletResponse response) {
-	        logger.debug("Saving consumer info for later retrieval " );
-	        String conData = null;
+	 public Map<String, String> saveConsumerInfo(@RequestBody Consumer consumer, HttpServletRequest request, HttpServletResponse response){
+	        logger.info("Saving consumer info for later retrieval " );
+	        Map<String, String> conData = null;
 	        boolean validRequest = validateConsumerDataBeforeSaving(consumer);
 	        if (validRequest){
 	            conData = consumerservice.saveConsumerInfo(consumer);
@@ -53,9 +68,10 @@ public class ConsumerController {
 	        }
 	        
 	        return conData;
-	    }
+	    
+	 }
 	 
-	 private boolean validateConsumerDataBeforeSaving(Consumer consumer) {
+	 private boolean validateConsumerDataBeforeSaving(final Consumer consumer) {
 		if(StringUtils.isNotBlank(consumer.getEmail()) && 
 				StringUtils.isNotBlank(consumer.getAddress().getCity()) && 
 				StringUtils.isNotBlank(consumer.getAddress().getGivenName()) &&
@@ -69,6 +85,16 @@ public class ConsumerController {
 		return false;
 	}
 
+	 /**
+	  * Method to get consumer info by giving Id in the request.
+	  * 
+	  * It retrieves the latest data stored for that customer
+	  * and if no customer exist with the given Id then returns 404 Not Found
+	  * 
+	  * @PathVariable Consumer Id
+	  * @return Consumer object
+	  * 
+	  */
 	@RequestMapping(method = GET, value ="/{id}")
 	 @ResponseBody
 	 public Consumer getConsumerInfoForId(@PathVariable("id") String consumerId, HttpServletRequest request, HttpServletResponse response) {
@@ -82,11 +108,20 @@ public class ConsumerController {
          return conData;
 	 }
 	 
+	/**
+	  * Method to get consumer info by giving emailId in the request.
+	  * 
+	  * It retrieves the latest data stored for that customer
+	  * and if no customer exist with the given emailId then returns 404 Not Found
+	  * 
+	  * @RequestParam email
+	  * @return Consumer object
+	  * 
+	  */
 	 @RequestMapping(method = GET, value ="/email")
 	 @ResponseBody
 	 public Consumer getConsumerInfoForEmail(@RequestParam("email") String email, HttpServletRequest request, HttpServletResponse response) {
 		 logger.info("Fetch customer for customer email: " + email);
-		 System.out.println("Got consumer in controller for consumer Key in thread "+Thread.currentThread().getId());
          Consumer conData = consumerservice.getConsumerInfoForEmail(email);  
          if (conData == null)
          {
@@ -96,11 +131,20 @@ public class ConsumerController {
 	        return conData;
 	 }
 
+	 /**
+	  * Method to get consumer info history by giving Id in the request.
+	  * 
+	  * It retrieves all the data stored for that customer and orders the data with the most recent one first and the oldest one last 
+	  * and if no matching consumer found then returns an empty array
+	  * 
+	  * @PathVariable Consumer Id
+	  * @return Object array
+	  * 
+	  */
 	 @RequestMapping(method = GET, value ="/{id}/history")
 	 @ResponseBody
-	 public Object getConsumerHistoryById(@PathVariable("id") String id) {
-		 logger.info("Fetch customer history for customer email: " + id);
-		 
+	 public Object[] getConsumerHistoryById(@PathVariable("id") String id) {
+		 logger.info("Fetch customer history for customer id: " + id);
 		 ConcurrentLinkedDeque<Consumer> conData = consumerservice.getConsumerHistoryById(id);
 		 if(conData == null)
 		 {

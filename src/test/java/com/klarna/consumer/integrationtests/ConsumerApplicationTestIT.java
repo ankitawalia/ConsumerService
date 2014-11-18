@@ -5,12 +5,14 @@ import static org.junit.Assert.assertNotNull;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
@@ -32,17 +34,22 @@ public class ConsumerApplicationTestIT {
 
     private static final ConsumerApplication APPLICATION = new ConsumerApplication(8080);
     private final RestTemplate restTemplate = restTemplate();
+    private final String invalidData = "{\"email\":\"test@test.com\", \"address\": { \"given_name\": \"  \", \"surname\": \"doe\", \"street\": \" Some   street\", \"street_no\": \"123\", \"zip_code\": \"178 23\", \"city\": \"Stockholm\"}}";
+    private final String validData = "{\"email\":\"test@test.com\", \"address\": { \"given_name\": \" John \", \"surname\": \"doe\", \"street\": \" Some   street\", \"street_no\": \"123\", \"zip_code\": \"178 23\", \"city\": \"Stockholm\"}}";
+    private final String validData2 = "{\"email\":\"test@test.com\", \"address\": { \"given_name\": \" John \", \"surname\": \"doe\", \"street\": \" Some   street\", \"street_no\": \"123456\", \"zip_code\": \"178 23\", \"city\": \"Stockholm\"}}";
+    private final String dataToNormalize = "{\"email\":\"normalize@test.com\", \"address\": { \"given_name\": \" john \", \"surname\": \"doe\", \"street\": \" Some    street\", \"street_no\": \"456\", \"zip_code\": \"178 23\", \"city\": \"SToCKholm\"}}";
 
-    @org.testng.annotations.BeforeClass
+    
+    @BeforeClass
     public static void init() throws Exception {
         APPLICATION.start();
     }
 
-    @org.testng.annotations.AfterClass
+    @AfterClass
     public static void tearDown() throws Exception {
         APPLICATION.stop();
     }
-
+    
     private HttpMessageConverter<?> jacksonConverter() {
         MappingJackson2HttpMessageConverter jacksonConverter = new MappingJackson2HttpMessageConverter();
         jacksonConverter.setObjectMapper(objectMapper());
@@ -63,6 +70,7 @@ public class ConsumerApplicationTestIT {
         converters.add(jacksonConverter());
         restTemplate.setMessageConverters(converters);
 
+
         restTemplate.setErrorHandler(new ResponseErrorHandler() {
             @Override
             public boolean hasError(ClientHttpResponse response) throws IOException {
@@ -80,7 +88,7 @@ public class ConsumerApplicationTestIT {
         return restTemplate;
     }
 
-    @org.testng.annotations.Test(invocationCount=10000,threadPoolSize=20)
+    @Test
     public void pingTest() {
         ResponseEntity<String> response = restTemplate.getForEntity("http://localhost:8080/ping", String.class);
         assertNotNull(response);
@@ -89,63 +97,102 @@ public class ConsumerApplicationTestIT {
     }
     
     
-    @org.testng.annotations.Test(invocationCount=10000,threadPoolSize=10)
+    @SuppressWarnings({ "unused", "unchecked" })
+    @Test
     public void testSaveConsumerInfo() {
-        RestTemplate rest = new RestTemplate();
-        String email = Thread.currentThread().getId()+"@test.com";
-        String a = "{\"email\":\""+email+"\", \"address\": { \"given_name\": \"john\", \"surname\": \"doe\", \"street\": \" Some   street\", \"street_no\": \"123\", \"zip_code\": \"178 23\", \"city\": \"Stockholm\"}}";
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        HttpEntity<String> http = new HttpEntity<String>(a, headers);
-        String response = rest.postForObject("http://localhost:8080/consumers",http, String.class);
-        Consumer response1 = rest.getForObject("http://localhost:8080/consumers/email?email="+Thread.currentThread().getId()+"@test.com", Consumer.class);
-        System.out.println("Response "+response+ " in thread"+Thread.currentThread().getId());
-        System.out.println("Response "+response1.toString()+ " in thread"+Thread.currentThread().getId());
-      //  assertNotNull(res);
+          Consumer consumer = null;
+		try {
+			consumer = objectMapper().readValue(validData, Consumer.class);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+        Map<String, String> response = new HashMap<String, String>();
+        response = restTemplate.postForObject("http://localhost:8080/consumers",consumer, Map.class);
+        Consumer response1 = restTemplate.getForObject("http://localhost:8080/consumers/email?email=test@test.com", Consumer.class);
+        assertNotNull(response1);
+        
     }
     
-
-   /* @Test
-    public void testUniqueIdGeneration()
-    {
-             int threadCount = 1000;
-            
-               Callable<Boolean> task = new Callable<Boolean>() {
-                   @Override
-                   public Boolean call() {
-                	   RestTemplate restTemplate = new RestTemplate();
-                	   Consumer consumer = new Consumer();
-                        // String sessionId = "testGetQueueSize-sessionId"+ Thread.currentThread().getId();
-                       // String callId = "testGetQueueSize-callId"+ Thread.currentThread().getId();
-                        ResponseEntity<Consumer> response = restTemplate.postForEntity("http://localhost:8080/consumers", consumer, Consumer.class);
-                        assertNotNull(response);
-                       
-                   }
-               };
-               List<Callable<Boolean>> tasks = Collections.nCopies(threadCount, task);
-               ExecutorService executorService = Executors.newFixedThreadPool(threadCount);
-               List<Future<Boolean>> futures = new ArrayList<>(threadCount);
-               int exceptionCount = 0;
-                               try {
-                                     futures = executorService.invokeAll(tasks);
-                               } catch (Exception e) {
-                                     System.out.println("exception in invokeall");
-                                    
-                               }
-                              
-                               for (Future<Boolean> future : futures) {
-                                    
-                                     try {
-                                            future.get();
-                                     } catch (Exception e) {
-                                            exceptionCount++;
-                                     }
-                               }
-               // Check for exceptions
-                        //int expectedQueueSize = theQueue.getQueueSize(serviceEndpointId);
-                       // System.out.println("printing total queue size" + expectedQueueSize);
-                       // System.out.println("printing total exceptionCount" + exceptionCount);
-               //assertEquals(threadCount-exceptionCount, expectedQueueSize);
-                               
-        }*/
+    @SuppressWarnings("rawtypes")
+	@Test
+    public void testInvalidConsumer() {
+          Consumer consumer = null;
+		try {
+			consumer = objectMapper().readValue(invalidData, Consumer.class);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		ResponseEntity<Map> response = restTemplate.postForEntity("http://localhost:8080/consumers",consumer, Map.class);
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+        
+    }
+    
+    @Test
+    public void testInvalidId() {
+         
+    	ResponseEntity<Consumer> response1 = restTemplate.getForEntity("http://localhost:8080/consumers/test", Consumer.class);
+        assertEquals(HttpStatus.NOT_FOUND,response1.getStatusCode());
+        
+    }
+    
+    @SuppressWarnings("unchecked")
+	@Test
+    public void testGetCustomerInfoById() {
+          Consumer consumer = null;
+		try {
+			consumer = objectMapper().readValue(validData, Consumer.class);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+        Map<String,String> response = restTemplate.postForObject("http://localhost:8080/consumers",consumer, Map.class);
+        Consumer response1 = restTemplate.getForObject("http://localhost:8080/consumers/"+response.get("consumer_id"), Consumer.class);
+        assertNotNull(response1);
+        
+    }
+    
+    @SuppressWarnings({ "unused", "unchecked" })
+	@Test
+    public void testGetCustomerHistoryById() {
+          Consumer consumer = null;
+          Consumer consumer1 = null;
+		try {
+			consumer = objectMapper().readValue(validData, Consumer.class);
+			consumer1 = objectMapper().readValue(validData2, Consumer.class);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		Map<String,String> response = restTemplate.postForObject("http://localhost:8080/consumers",consumer, Map.class);
+		Map<String,String> response2 = restTemplate.postForObject("http://localhost:8080/consumers",consumer, Map.class);
+        Object[] response1 = restTemplate.getForObject("http://localhost:8080/consumers/"+response.get("consumer_id")+ "/history", Object[].class);
+        assertEquals(1,response1.length);
+        Map<String,String> responseFromPost1 = restTemplate.postForObject("http://localhost:8080/consumers",consumer1, Map.class);
+        Map<String,String> responseFromPost2 = restTemplate.postForObject("http://localhost:8080/consumers",consumer1, Map.class);
+        Object[] responseObject = restTemplate.getForObject("http://localhost:8080/consumers/"+responseFromPost1.get("consumer_id")+ "/history", Object[].class);
+        assertEquals(2,responseObject.length);
+        
+    }
+    
+    @SuppressWarnings({ "unused", "unchecked" })
+    @Test
+    public void testDataNormalization() {
+          Consumer consumer = null;
+		try {
+			consumer = objectMapper().readValue(dataToNormalize, Consumer.class);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		Map<String,String> response = restTemplate.postForObject("http://localhost:8080/consumers",consumer, Map.class);
+        Consumer response1 = restTemplate.getForObject("http://localhost:8080/consumers/email?email=normalize@test.com", Consumer.class);
+        assertNotNull(response1);
+        assertEquals("John", response1.getAddress().getGivenName());
+        assertEquals("Doe", response1.getAddress().getSurname());
+        assertEquals("Some Street", response1.getAddress().getStreet());
+        assertEquals("456", response1.getAddress().getStreetNo());
+        assertEquals("178 23", response1.getAddress().getZipCode());
+        assertEquals("Stockholm", response1.getAddress().getCity());
+        assertEquals(null, response1.getAddress().getCountry());
+        assertEquals(null, response1.getAddress().getCareOf());
+        
+    }
+    
 }

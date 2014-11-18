@@ -1,5 +1,7 @@
 package com.klarna.consumer.service;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentLinkedDeque;
 
@@ -19,8 +21,20 @@ public class ConsumerServiceImpl implements ConsumerService {
 	@Autowired
 	private ConsumerCacheService consumerCacheService;
 
+	/**
+	  * Method to save consumer info in the cache.
+	  * 
+	  * It checks if the consumer with the same email address has already been 
+	  * registered, the consumer id for this registered consumer is returned. 
+	  * If it is a new consumer, a new id is generated.
+	  * Also it stores all address fields in a normalized form
+	  * 
+	  * @Param Consumer object
+	  * @return Map of String
+	  * 
+	  */
 	@Override
-	public String saveConsumerInfo(Consumer consumer) {
+	public Map<String, String> saveConsumerInfo(final Consumer consumer) {
 		Consumer consumerToSave ;
 		String consumerId = checkIfConsumerAlreadyExists(consumer.getEmail());
 		if(consumerId == null) {
@@ -29,28 +43,42 @@ public class ConsumerServiceImpl implements ConsumerService {
 		Address normalizedAddress = AddressNormalizer.normalize(consumer.getAddress());
 		consumerToSave = consumer.withConsumerId(consumerId).withAddress(normalizedAddress);
 		consumerCacheService.addConsumer(consumerId, consumerToSave);
-        return consumerToSave.getConsumerId();
+		Map<String,String> consumerIdMap =new HashMap<String,String>();
+		consumerIdMap.put("consumer_id", consumerToSave.getConsumerId());
+        return consumerIdMap;
 		
 	}
 	
 	@Override
-	public Consumer getConsumerInfoForId(String consumerId) {
+	public Consumer getConsumerInfoForId(final String consumerId) {
         return consumerCacheService.getConsumer(consumerId);
 	}
 	
 	@Override
-	public Consumer getConsumerInfoForEmail(String email){
+	public Consumer getConsumerInfoForEmail(final String email){
 		String consumerId = consumerCacheService.getConsumerIdForEmail(email);
 		return consumerId != null ? consumerCacheService.getConsumer(consumerId) : null;
 	}
 	
-	private String checkIfConsumerAlreadyExists(String email) {
+	/**
+	  * Method to check if consumer with the Email already exists.
+	  * 
+	  * A CopyOnWriteArrayList is maintained which stores consumer email and id.
+	  * Whenever post request comes to save or update consumer info email is checked in this list .
+	  * If email exists then Id for that consumer is returned.
+	  * 
+	  * @Param email 
+	  * @return consumerIdString
+	  * 
+	  */
+	private String checkIfConsumerAlreadyExists(final String email) {
 		String consumerId  = consumerCacheService.getConsumerIdForEmail(email);
 		return consumerId;
 	}
 
 	@Override
-	public ConcurrentLinkedDeque<Consumer> getConsumerHistoryById(String consumerId) {
+	public ConcurrentLinkedDeque<Consumer> getConsumerHistoryById(final String consumerId) {
 		return consumerCacheService.getConsumerHistoryById(consumerId);
 	}
+	
 }

@@ -17,6 +17,7 @@ public String getConsumerIdForEmail(String email);
 
 public void removeConsumerFromSeconaryMappings(String id);
 
+@SuppressWarnings("rawtypes")
 public void setCache(Cache cache);
 
 }

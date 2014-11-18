@@ -10,6 +10,11 @@ import javax.annotation.PreDestroy;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+/**
+ * @author ankita walia
+ * 
+ * Generic class for cache cleanup
+ */
 @Service
 public class CacheCleanup {
  

@@ -9,6 +9,13 @@ import org.springframework.stereotype.Service;
 
 import com.google.common.cache.Cache;
 
+/**
+ * @author ankita walia
+ * 
+ * Generic Cache manager 
+ * Used to register cache,get cache and get CacheNames
+ * 
+ */
 @Service
 @SuppressWarnings("rawtypes")
 public class CacheManager {

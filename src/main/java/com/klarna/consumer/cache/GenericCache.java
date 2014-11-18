@@ -9,6 +9,14 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.klarna.consumer.service.ConsumerCacheService;
 
+
+/**
+ * @author ankita walia
+ * 
+ * Generic Cache class for creating all different type of caches
+ */
+
+@SuppressWarnings("rawtypes")
 @Component
 public class GenericCache<T> implements CacheCreationListener {
 	@Autowired
@@ -17,6 +25,7 @@ public class GenericCache<T> implements CacheCreationListener {
 	protected CacheManager cacheManager;
 	
 	protected  Cache<String, T > genericCache;
+	
 	protected CacheBuilder cacheBuilder;
  
 	public GenericCache() {
@@ -33,6 +42,7 @@ public class GenericCache<T> implements CacheCreationListener {
 				  .expireAfterWrite(5, TimeUnit.HOURS).maximumSize(100);
 	}
 
+	@SuppressWarnings("unchecked")
 	private void build() {
 		genericCache = cacheBuilder.build();
 	}
